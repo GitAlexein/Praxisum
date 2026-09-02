@@ -1,0 +1,43 @@
+name: Deploy site
+on:
+  push:
+    branches: [main]
+  repository_dispatch:
+    types: [facta-updated]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: GitAlexein/Facta
+          path: _facta
+      - run: |
+          mkdir -p _site
+          rsync -a --exclude='.git' ./ _site/ --exclude='_site' --exclude='_facta'
+          mkdir -p _site/facta
+          rsync -a --exclude='.git' _facta/ _site/facta/
+          echo "praxisum.it" > _site/CNAME
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/deploy-pages@v4
